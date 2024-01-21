@@ -17,6 +17,18 @@ export function activate(context: vscode.ExtensionContext) {
 		// The code you place here will be executed every time your command is executed
 		// Display a message box to the user
 		vscode.window.showInformationMessage('Hello World from Undo Tree!');
+		//Add functionality that when a new event is added to the Undo Stack it is logged to the console
+		vscode.window.onDidChangeTextEditorSelection((event) => {
+			//We should group events together to logical units
+			getTextEditorSelection(event);
+		});
+	});
+	const getTextEditorSelection = ((event: vscode.TextEditorSelectionChangeEvent) => {
+		//get the text from the range of the event
+		const text = event.textEditor.document.getText(new vscode.Range(event.selections[0].start.line, event.selections[0].start.character - 1, event.selections[0].end.line, event.selections[0].end.character));
+		console.log(text);
+		//in addition to the selected text we should get any inserted text
+
 	});
 }
 
