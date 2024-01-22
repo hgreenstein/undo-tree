@@ -4,7 +4,6 @@ import * as vscode from 'vscode';
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
-let replayed = false;
 export function activate(context: vscode.ExtensionContext) {
 
 	// Use the console to output diagnostic information (console.log) and errors (console.error) // This line of code will only be executed once when your extension is activated console.log('Congratulations, your extension "undo-tree" is now active!');
@@ -14,7 +13,6 @@ export function activate(context: vscode.ExtensionContext) {
 	// The commandId parameter must match the command field in package.json
 	let replayCommand = vscode.commands.registerCommand('undo-tree.replayChanges', () => {
 		vscode.window.showInformationMessage('Replaying window');
-		replayed = false;
         replayChanges();
     });
 
@@ -30,32 +28,8 @@ export function activate(context: vscode.ExtensionContext) {
 		// 	const selectedRange = new vscode.Range(event.selections[0].start.line, event.selections[0].start.character - 1, event.selections[0].end.line, event.selections[0].end.character); 
 		// 	const position = new vscode.Position(event.selections[0].start.line, event.selections[0].start.character - 1);
 		// 	const currentText = event.textEditor.document.getText();
-		// 	//if either current text or previous text is undefined and the other is not undefined, then the text was replaced
-		// 	if((currentText === undefined && previousText !== undefined) || (currentText !== undefined && previousText === undefined)){
-		// 		console.log("Text was inserted");
-		// 	}
-		// 	else if(currentText === undefined || previousText === undefined){
-		// 		console.log("This should never log");
-		// 	}
-		// 	else if(currentText !== previousText){
-		// 		if(currentText.length > previousText.length){
-		// 			console.log("Text was added");
-		// 		}
-		// 		else if(currentText.length < previousText.length){
-		// 			console.log("Text was deleted");
-		// 		}
-		// 		else{
-		// 			console.log("Text was replaced");
-		// 		}
-		// 	}
-		// 	else{
-		// 		console.log("No change");
-		// 	}
-		// 	previousText = currentText;
-
 		// 	// console.log(recursivelyParseObject(event.textEditor.document.getWordRangeAtPosition(position)));
 		// 	// console.log(event.textEditor.document.getText(event.textEditor.document.getWordRangeAtPosition(position)));
-		// 	//check if the event is inserting text or deleting text
 		// });
 		// vscode.workspace.onDidChangeTextDocument((event) => {
 		// 	//Parse through every property of the event, if it is a string, log it to the console, else if it is an object, parse through it
@@ -74,7 +48,9 @@ interface TextChange {
 
 let changes: TextChange[] = [];
 
-let isReplayingChanges = false;
+/** pauses the onDidChangeTextDocument function if replaying changes */
+let isReplayingChanges: boolean = false;
+/** Upon activation current with the Hello World command, start listening and storing changes to the active text editor */
 function onDidChangeTextDocument() {
     vscode.workspace.onDidChangeTextDocument(event => {
 		if(isReplayingChanges){
@@ -90,6 +66,13 @@ function onDidChangeTextDocument() {
         });
     });
 }
+/**
+ * Replays all changes in the active text editor in the order they were made
+ * Pauses the onDidChangeTextDocument listener via the isReplayingChanges flag 
+ * while it is replaying changes to prevent infinite recursion
+ * @async
+ * @returns {Promise<void>}
+ */
 async function replayChanges() {
 	 	isReplayingChanges = true;
 		const editor = vscode.window.activeTextEditor;
@@ -112,9 +95,16 @@ async function replayChanges() {
 		}
 		isReplayingChanges = false;
 }
+/**
+ * Recursively parse an object and log its properties to the console 
+ *
+ * @param {any} obj
+ * @param {string} [path='']
+ * @param {WeakSet} [visited=new WeakSet()]
+ */
 function recursivelyParseObject(obj: any, path = '', visited = new WeakSet()) {
     for (var property in obj) {
-        const currentPath = path ? `${path}.${property}` : property;
+        const currentPath: string = path ? `${path}.${property}` : property;
 
         if (typeof obj[property] === 'function') {
             const func = obj[property];
@@ -139,13 +129,13 @@ function recursivelyParseObject(obj: any, path = '', visited = new WeakSet()) {
 }
 function printChangedText() {
     vscode.workspace.onDidChangeTextDocument(event => {
-        const document = event.document;
-        const contentChanges = event.contentChanges;
+        const document: vscode.TextDocument = event.document;
+        const contentChanges: readonly vscode.TextDocumentContentChangeEvent[] = event.contentChanges;
 
-        contentChanges.forEach(change => {
+        contentChanges.forEach((change: vscode.TextDocumentContentChangeEvent) => {
             if (change.text === '') {
                 // Deletion case: Use the range to infer the deleted text
-                const deletedRange = new vscode.Range(change.range.start, change.range.end);
+                const deletedRange: vscode.Range = new vscode.Range(change.range.start, change.range.end);
                 console.log('Deleted text:', document.getText(deletedRange));
 				recursivelyParseObject(change);
             } else {
