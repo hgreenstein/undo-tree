@@ -16,6 +16,10 @@
       {
         "command": "undo-tree.helloWorld",
         "title": "Hello World"
+      },
+      {
+        "command": "undo-tree.replayChanges",
+        "title": "Replay Changes"
       }
     ]
   },
